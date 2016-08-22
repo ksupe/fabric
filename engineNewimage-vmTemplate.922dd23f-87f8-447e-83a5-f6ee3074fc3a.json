@@ -1,0 +1,62 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/VM_IP.json",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "vmName": {
+      "type": "string"
+    },
+    "vmSize": {
+      "type": "string",
+      "defaultValue": "Standard_D2_v2"
+    },
+    "adminUserName": {
+      "type": "string"
+    },
+    "adminPassword": {
+      "type": "securestring"
+    },
+    "networkInterfaceId": {
+      "type": "string"
+    }
+  },
+  "resources": [
+    {
+      "apiVersion": "2016-03-30",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('vmSize')]"
+        },
+        "storageProfile": {
+          "osDisk": {
+            "osType": "Linux",
+            "name": "engineNewimage-osDisk.922dd23f-87f8-447e-83a5-f6ee3074fc3a.vhd",
+            "createOption": "FromImage",
+            "image": {
+              "uri": "https://resourcegroup16285.blob.core.windows.net/system/Microsoft.Compute/Images/vhds/engineNewimage-osDisk.922dd23f-87f8-447e-83a5-f6ee3074fc3a.vhd"
+            },
+            "vhd": {
+              "uri": "https://resourcegroup16285.blob.core.windows.net/vmcontainere22b7d0a-2e1c-48fc-aae9-c7b73c24c0a7/osDisk.e22b7d0a-2e1c-48fc-aae9-c7b73c24c0a7.vhd"
+            },
+            "caching": "ReadWrite"
+          }
+        },
+        "osProfile": {
+          "computerName": "[parameters('vmName')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+        "networkProfile": {"networkInterfaces":[{"id":"[parameters('networkInterfaceId')]"}]},
+        "diagnosticsProfile": {
+          "bootDiagnostics": {
+            "enabled": true,
+            "storageUri": "https://resourcegroup16285.blob.core.windows.net/"
+          }
+        },
+        "provisioningState": 0
+      },
+      "name": "[parameters('vmName')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "location": "eastus"
+    }
+  ]
+}
