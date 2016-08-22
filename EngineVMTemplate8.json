@@ -1,0 +1,176 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "adminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "User name for the Virtual Machine."
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "Password for the Virtual Machine."
+      }
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "Location to create the VM"
+      }
+    },
+    "storageAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the storage account as it appears in a URI referencing a blob or file contained within that storage account. EX: http://<storageAccountName>.blob.core.windows.net/ "
+      }
+    },
+    "storageAccountType": {
+      "type": "string",
+	  "defaultValue": "Standard_LRS",
+      "metadata": {
+        "description": "The type of storage account being used. Default value: 'Standard_LRS'"
+      }
+    },
+    "vmSize": {
+      "type": "string",
+      "defaultValue": "Standard_D1",
+      "metadata": {
+        "description": "Size of the VM. Default value: 'Standard_D1'"
+      }
+    },
+    "vmName": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of the VM"
+      }
+    },
+    "vmDateTime": {
+      "type": "string",
+      "metadata": {
+        "description": "In the format of yyyyMMddHHmmssSSS so we can uniquely identify the objects specifically associated with this VM"
+      }
+    },
+    "virtualNetworkName": {
+      "type": "string",
+      "metadata": {
+        "description": "The Name of the Virtual Network this VM should be attached to."
+      }
+    },
+    "subnetName": {
+      "type": "string",
+      "metadata": {
+        "description": "The Name of the subnet this VM should be attached to."
+      }
+    },
+    "subscriptionID": {
+      "type": "string",
+      "metadata": {
+        "description": "The GUID identifier for the subscription being used."
+      }
+    }
+  },
+  "variables": {
+    "api-version": "2015-06-15",
+    "vmUniqueName": "[concat(parameters('vmName'),parameters('vmDateTime'))]",
+    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',parameters('virtualNetworkName'))]",
+    "subnetRef": "[concat(variables('vnetID'),'/subnets/',parameters('subnetName'))]",
+	"uniqueDnsLabelPrefix": "[concat('store', uniquestring(resourceGroup().id),parameters('vmDateTime'))]",
+	"publicIPAddressName": "[concat('sshPublicIP',variables('vmUniqueName'))]",
+    "publicIPAddressType": "Dynamic",
+  },
+  "resources": [
+  {
+      "type": "Microsoft.Storage/storageAccounts",
+      "name": "[parameters('storageAccountName')]",
+      "apiVersion": "[variables('api-version')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "accountType": "[parameters('storageAccountType')]"
+      }
+   },
+   {
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('publicIPAddressName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[variables('uniqueDnsLabelPrefix')]"
+        }
+      }
+    },
+   {
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('vmUniqueName')]",
+      "location": "[parameters('location')]",
+	  "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+			  "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', variables('publicIPAddressName'))]"
+              },
+              "subnet": {
+                "id": "[variables('subnetRef')]"
+              }
+            }
+          }
+        ],
+	"primary": true,
+	"virtualMachine": {
+		"id": "[concat('/subscriptions/',parameters('subscriptionID'),'/resourceGroups/',parameters('storageAccountName'),'/providers/Microsoft.Compute/virtualMachines/',variables('vmUniqueName'))]"
+			}
+	}
+    },
+    {
+      "apiVersion": "[variables('api-version')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[variables('vmUniqueName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/', variables('vmUniqueName'))]",
+        "[concat('Microsoft.Storage/storageAccounts/', parameters('storageAccountName'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('vmSize')]"
+        },
+	"osProfile": {
+          "computerName": "[parameters('vmName')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]"
+        },
+		"storageProfile":{
+			"osDisk":{
+				"osType":"Linux",
+				"name":"engineNewimage-osDisk.922dd23f-87f8-447e-83a5-f6ee3074fc3a.vhd",
+				"createOption":"FromImage",
+				"image":{
+					"uri":"https://resourcegroup16285.blob.core.windows.net/system/Microsoft.Compute/Images/vhds/engineNewimage-osDisk.922dd23f-87f8-447e-83a5-f6ee3074fc3a.vhd"
+					},
+				"vhd":{
+					"uri":"[concat('https://',parameters('storageAccountName'),'.blob.core.windows.net/vhds/',variables('vmUniqueName'),'.vhd')]"
+					},
+				"caching":"ReadWrite"
+			}
+		},
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('vmUniqueName'))]"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}
