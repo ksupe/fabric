@@ -152,7 +152,7 @@
 		"storageProfile":{
 			"osDisk":{
 				"osType":"Linux",
-				"name":"engineNewimage-osDisk.922dd23f-87f8-447e-83a5-f6ee3074fc3a.vhd",
+				"name":"engineimage1-osDisk.a65955b3-e0fb-4a58-982e-084da618ff71.vhd",
 				"createOption":"FromImage",
 				"image":{
 					"uri":"https://resourcegroup16285.blob.core.windows.net/system/Microsoft.Compute/Images/vhds/engineimage1-osDisk.a65955b3-e0fb-4a58-982e-084da618ff71.vhd"
